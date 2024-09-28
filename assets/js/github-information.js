@@ -1,5 +1,5 @@
 function userInformationHTML(user) {
-    return  `
+    return `
         <h2>${user.name}
             <span class="small-name">
                 (@<a href="${user.html_url}" target="_blank">${user.login}</a>)
@@ -11,7 +11,7 @@ function userInformationHTML(user) {
                     <img src="${user.avatar_url}" width="80" height="80" alt="${user.login}" />
                 </a>
             </div>
-            <p>Followers: ${user.followers} - Following: ${user.following} <br> Repos: ${user.public_repos}</p>
+            <p>Followers: ${user.followers} - Following ${user.following} <br> Repos: ${user.public_repos}</p>
         </div>`;
 }
 
@@ -32,7 +32,6 @@ function repoInformationHTML(repos) {
                 </p>
                 <ul>
                     ${listItemsHTML.join("\n")}
-                
                 </ul>
             </div>`;
 }
@@ -46,10 +45,12 @@ function fetchGitHubInformation(event) {
         $("#gh-user-data").html(`<h2>Please enter a GitHub username</h2>`);
         return;
     }
+
     $("#gh-user-data").html(
         `<div id="loader">
             <img src="assets/css/loader.gif" alt="loading..." />
         </div>`);
+
     $.when(
         $.getJSON(`https://api.github.com/users/${username}`),
         $.getJSON(`https://api.github.com/users/${username}/repos`)
@@ -59,14 +60,19 @@ function fetchGitHubInformation(event) {
             var repoData = secondResponse[0];
             $("#gh-user-data").html(userInformationHTML(userData));
             $("#gh-repo-data").html(repoInformationHTML(repoData));
-        }, function(errorResponse) {
+        },
+        function(errorResponse) {
             if (errorResponse.status === 404) {
-                $("#gh-user-data").html(`<h2>No info found for ${userneme}</h2>`);
-        } else {
-            console.log(errorResponse);
-            $("#gh-user-data").html(
-                `<h2>Error: ${errorResponse.responseJSON.message}</h2>`);
-        }
+                $("#gh-user-data").html(
+                    `<h2>No info found for user ${username}</h2>`);
+            } else if (errorResponse.status === 403) {
+                var resetTime = new Date(errorResponse.getResponseHeader('X-RateLimit-Reset') * 1000);
+                $("#gh-user-data").html(`<h4>Too many requests, please wait until ${resetTime.toLocaleTimeString()}</h4>`);
+            } else {
+                console.log(errorResponse);
+                $("#gh-user-data").html(
+                    `<h2>Error: ${errorResponse.responseJSON.message}</h2>`);
+            }
         });
 }
 
